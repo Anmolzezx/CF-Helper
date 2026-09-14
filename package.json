@@ -1,0 +1,77 @@
+{
+  "name": "codeforces-helper",
+  "displayName": "Codeforces Helper",
+  "description": "Receives problems from Competitive Companion and creates organised Java solution files.",
+  "version": "0.0.1",
+  "publisher": "anmol",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        { "id": "cfHelper", "title": "Codeforces Helper", "icon": "media/icon.svg" }
+      ]
+    },
+    "views": {
+      "cfHelper": [
+        { "type": "webview", "id": "cfHelper.tests", "name": "Tests" }
+      ]
+    },
+    "commands": [
+      { "command": "cfHelper.runTests", "title": "Run Tests", "category": "Codeforces Helper", "icon": "$(play)" },
+      { "command": "cfHelper.openTests", "title": "Edit Tests", "category": "Codeforces Helper" }
+    ],
+    "keybindings": [
+      { "command": "cfHelper.runTests", "key": "ctrl+alt+r", "when": "editorLangId == java" }
+    ],
+    "menus": {
+      "editor/title": [
+        { "command": "cfHelper.runTests", "when": "resourceExtname == .java", "group": "navigation" }
+      ]
+    },
+    "configuration": {
+      "title": "Codeforces Helper",
+      "properties": {
+        "cfHelper.port": {
+          "type": "number",
+          "default": 27122,
+          "description": "Port to listen on. Add the same port to Competitive Companion's custom ports."
+        },
+        "cfHelper.rootFolder": {
+          "type": "string",
+          "default": "Codeforces",
+          "description": "Folder (relative to the first workspace folder, or absolute) where contest folders are created."
+        },
+        "cfHelper.javacPath": {
+          "type": "string",
+          "default": "javac",
+          "description": "Java compiler used by Run Tests."
+        },
+        "cfHelper.javaPath": {
+          "type": "string",
+          "default": "java",
+          "description": "Java runtime used by Run Tests."
+        },
+        "cfHelper.templateFile": {
+          "type": "string",
+          "default": "",
+          "description": "Path to a Java template. CLASS_NAME is replaced with the class name; ${cursor} marks the cursor position. Empty uses the built-in template."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -watch -p .",
+    "test": "tsc -p . && node --test out/test/*.test.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.4.0"
+  }
+}
