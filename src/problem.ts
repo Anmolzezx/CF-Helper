@@ -100,7 +100,8 @@ public class CLASS_NAME {
         int nextInt() throws IOException {
             return (int) nextLong();
         }
-            String next() throws IOException {
+
+        String next() throws IOException {
             int c;
             StringBuilder value = new StringBuilder();
 
