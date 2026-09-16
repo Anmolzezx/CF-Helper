@@ -100,6 +100,25 @@ public class CLASS_NAME {
         int nextInt() throws IOException {
             return (int) nextLong();
         }
+            String next() throws IOException {
+            int c;
+            StringBuilder value = new StringBuilder();
+
+            do {
+                c = read();
+            } while (c != -1 && c <= ' ');
+
+            if (c == -1) {
+                throw new EOFException();
+            }
+
+            while (c > ' ') {
+                value.append((char) c);
+                c = read();
+            }
+
+            return value.toString();
+        }
 
         long nextLong() throws IOException {
             int c;
