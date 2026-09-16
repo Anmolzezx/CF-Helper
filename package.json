@@ -41,10 +41,16 @@
           "default": 27122,
           "description": "Port to listen on. Add the same port to Competitive Companion's custom ports."
         },
+        "cfHelper.workspaceFolder": {
+          "type": "string",
+          "default": "",
+          "scope": "application",
+          "markdownDescription": "Only the VS Code window with this folder open receives problems from Competitive Companion, e.g. `~/Documents/GitHub/codeforces`. Other windows ignore them. Leave empty to use whichever window started first."
+        },
         "cfHelper.rootFolder": {
           "type": "string",
           "default": "Codeforces",
-          "description": "Folder (relative to the first workspace folder, or absolute) where contest folders are created."
+          "description": "Folder (relative to the workspace folder, or absolute) where contest folders are created."
         },
         "cfHelper.javacPath": {
           "type": "string",

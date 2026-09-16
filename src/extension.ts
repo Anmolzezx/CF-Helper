@@ -8,6 +8,7 @@ import {
   parseProblem,
   renderTemplate,
 } from './problem';
+import { expandHome, samePath } from './paths';
 import { TestFile, testFilePath } from './runner';
 import { TestsViewProvider } from './testsView';
 
@@ -20,11 +21,48 @@ export function activate(context: vscode.ExtensionContext) {
     testsView.register(),
     vscode.commands.registerCommand('cfHelper.runTests', () => testsView.runAllFromCommand()),
     vscode.commands.registerCommand('cfHelper.openTests', openTests),
+    vscode.workspace.onDidChangeWorkspaceFolders(() => updateServer()),
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration('cfHelper.port') || e.affectsConfiguration('cfHelper.workspaceFolder')) {
+        updateServer(true);
+      }
+    }),
+    { dispose: stopServer },
   );
+  updateServer();
+}
 
+export function deactivate() {
+  stopServer();
+}
+
+/**
+ * With cfHelper.workspaceFolder set, only the window that has that folder open receives problems;
+ * other VS Code windows leave the port alone. Without it, the first window to start wins.
+ */
+function problemsWorkspace(): string | undefined {
+  const configured = vscode.workspace.getConfiguration('cfHelper').get<string>('workspaceFolder', '');
+  const folders = vscode.workspace.workspaceFolders ?? [];
+  if (!configured) return folders[0]?.uri.fsPath;
+  return folders.find((f) => samePath(f.uri.fsPath, configured))?.uri.fsPath;
+}
+
+function updateServer(restart = false) {
+  const configured = vscode.workspace.getConfiguration('cfHelper').get<string>('workspaceFolder', '');
+  const shouldListen = !configured || problemsWorkspace() !== undefined;
+  if (server && (restart || !shouldListen)) stopServer();
+  if (shouldListen && !server) startServer();
+}
+
+function stopServer() {
+  server?.close();
+  server = undefined;
+}
+
+function startServer() {
   const port = vscode.workspace.getConfiguration('cfHelper').get<number>('port', 27122);
 
-  server = http.createServer((req, res) => {
+  const s = http.createServer((req, res) => {
     if (req.method !== 'POST') {
       res.writeHead(405).end();
       return;
@@ -40,7 +78,8 @@ export function activate(context: vscode.ExtensionContext) {
     });
   });
 
-  server.on('error', (err: NodeJS.ErrnoException) => {
+  s.on('error', (err: NodeJS.ErrnoException) => {
+    if (server === s) server = undefined; // lets a later folder/config change retry
     const msg =
       err.code === 'EADDRINUSE'
         ? `port ${port} is already in use (another VS Code window may own it).`
@@ -49,12 +88,8 @@ export function activate(context: vscode.ExtensionContext) {
   });
 
   // Localhost only: nothing outside this machine can create files.
-  server.listen(port, '127.0.0.1');
-  context.subscriptions.push({ dispose: () => server?.close() });
-}
-
-export function deactivate() {
-  server?.close();
+  s.listen(port, '127.0.0.1');
+  server = s;
 }
 
 async function handleBody(body: string) {
@@ -102,9 +137,9 @@ async function handleBody(body: string) {
 async function resolveRoot(): Promise<string> {
   const root = vscode.workspace.getConfiguration('cfHelper').get<string>('rootFolder', 'Codeforces');
   if (path.isAbsolute(root)) return root;
-  const ws = vscode.workspace.workspaceFolders?.[0];
+  const ws = problemsWorkspace();
   if (!ws) throw new Error('open a workspace folder first (or set cfHelper.rootFolder to an absolute path).');
-  return path.join(ws.uri.fsPath, root);
+  return path.join(ws, root);
 }
 
 function activeJavaFile(): vscode.TextDocument {
@@ -124,5 +159,5 @@ async function openTests() {
 
 async function loadTemplate(): Promise<string> {
   const file = vscode.workspace.getConfiguration('cfHelper').get<string>('templateFile', '');
-  return file ? fs.readFile(file.replace(/^~(?=\/)/, process.env.HOME ?? '~'), 'utf8') : DEFAULT_TEMPLATE;
+  return file ? fs.readFile(expandHome(file), 'utf8') : DEFAULT_TEMPLATE;
 }

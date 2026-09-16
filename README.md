@@ -91,10 +91,24 @@ Run **Codeforces Helper: Edit Tests** from the Command Palette to open the curre
 | Setting | Default | Description |
 | --- | --- | --- |
 | `cfHelper.port` | `27122` | Port the extension listens on. Must match the custom port in Competitive Companion. |
-| `cfHelper.rootFolder` | `Codeforces` | Where contest folders are created: relative to the first workspace folder, or an absolute path. |
+| `cfHelper.workspaceFolder` | *(empty)* | Only the VS Code window with this folder open receives problems, for example `~/Documents/GitHub/codeforces`. Set it in **User** settings. See [Multiple VS Code windows](#multiple-vs-code-windows). |
+| `cfHelper.rootFolder` | `Codeforces` | Where contest folders are created: relative to the workspace folder, or an absolute path. |
 | `cfHelper.templateFile` | *(empty)* | Path to your own Java template. Leave empty to use the built-in one. |
 | `cfHelper.javacPath` | `javac` | Java compiler used to run tests. |
 | `cfHelper.javaPath` | `java` | Java runtime used to run tests. |
+
+## Multiple VS Code windows
+
+Only one program can listen on a port. Without extra setup, whichever VS Code window starts first receives problems, even if it's a different project.
+
+To always send problems to your Codeforces folder, add this to your **User** settings (Cmd+Shift+P → **Preferences: Open User Settings (JSON)**):
+
+```json
+"cfHelper.workspaceFolder": "~/Documents/GitHub/codeforces"
+```
+
+- Only the window with that folder open listens for **+**. Other windows ignore it, and the Tests panel still works in all of them.
+- If the folder isn't open in any window, clicking **+** does nothing. Open the folder and click **+** again.
 
 ## Custom template
 
@@ -134,6 +148,7 @@ codeforces-helper/
 ├── package.json            Extension manifest: commands, keybinding, panel, settings
 ├── src/
 │   ├── extension.ts        Activation, local HTTP server, file creation
+│   ├── paths.ts            Path helpers for matching the workspace folder
 │   ├── problem.ts          URL parsing, class names, template (no VS Code dependency)
 │   ├── runner.ts           Compiling, running and judging tests (no VS Code dependency)
 │   ├── testsView.ts        Tests panel: file access and running
@@ -169,7 +184,7 @@ code --install-extension codeforces-helper-0.0.1.vsix
 
 - Codeforces only. Problems from other sites are ignored, with a warning.
 - Java only.
-- One VS Code window at a time can use the port. Other windows show a "port already in use" error and won't receive problems.
+- One VS Code window at a time can receive problems. Set `cfHelper.workspaceFolder` to choose which one.
 - Measured times include JVM startup, so they're higher than on Codeforces.
 - Interactive problems and problems that read from files aren't supported.
 
@@ -178,7 +193,8 @@ code --install-extension codeforces-helper-0.0.1.vsix
 | Problem | Fix |
 | --- | --- |
 | Nothing happens when clicking **+** | Check that `27122` is in Competitive Companion's custom ports and that the extension is running. |
-| "Port 27122 is already in use" | Another VS Code window has the extension running. Close it, or change `cfHelper.port` and update Competitive Companion to match. |
+| Problems go to the wrong VS Code window | Set `cfHelper.workspaceFolder`. See [Multiple VS Code windows](#multiple-vs-code-windows). |
+| "Port 27122 is already in use" | Another window is already listening: the same folder open twice, or an F5 development window. Close it and reload this window, or change `cfHelper.port` and update Competitive Companion to match. |
 | "Open a workspace folder first" | Open a folder in VS Code, or set `cfHelper.rootFolder` to an absolute path. |
 | Tests panel says "No tests" | The file was created before tests were saved. Click **+** on the problem again; your code isn't changed. |
 | Compile fails with `javac` not found | Set `cfHelper.javacPath` and `cfHelper.javaPath` to full paths, for example `/usr/bin/javac`. |
